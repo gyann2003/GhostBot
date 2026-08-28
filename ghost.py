@@ -27,7 +27,7 @@ bot = telebot.TeleBot(API_TOKEN)
 tracker_status = {}
 
 print("=======================================================")
-print("👻 GHOST TRACKER - CLOUD RENDER MODE ⚡")
+print("👻 GHOST TRACKER - CLOUD MULTI-TASKING MODE ⚡")
 print("=======================================================")
 
 LOCATIONS = {
@@ -49,27 +49,14 @@ def send_welcome(message):
 @bot.message_handler(func=lambda message: message.text == '🛑 Stop Tracker')
 def stop_process(message):
     tracker_status[message.chat.id] = False
-    bot.send_message(message.chat.id, "🚫 Tracker Stop Kar Diya Gaya Hai.", reply_markup=get_main_menu())
+    bot.send_message(message.chat.id, "🚫 Tracker Stop Kar Diya Gaya Hai. Background process band ho raha hai...", reply_markup=get_main_menu())
 
-@bot.message_handler(func=lambda message: message.text.startswith('📍 Track:'))
-def start_ghost_tracking(message):
-    tracker_status[message.chat.id] = False 
-    time.sleep(1) 
-
-    loc_name = message.text.replace('📍 Track: ', '')
-    if loc_name not in LOCATIONS:
-        return
-
-    dist_id = LOCATIONS[loc_name]["dist_id"]
-    off_id = LOCATIONS[loc_name]["off_id"]
-    tracker_status[message.chat.id] = True
+# 🔥 BACKGROUND TRACKING ENGINE (Yeh akele background mein chalega) 🔥
+def run_tracker(chat_id, loc_name, dist_id, off_id):
     first_scan = True 
-
-    bot.send_message(message.chat.id, f"⚡ **CLOUD MODE ON:** {loc_name}\n\n🕵️‍♂️ 24/7 Tracking shuru...", parse_mode='Markdown', reply_markup=types.ReplyKeyboardMarkup(resize_keyboard=True).add("🛑 Stop Tracker"))
-
     url = "https://www.igrodisha.gov.in/SlotBookingAllNew.aspx"
     
-    while tracker_status.get(message.chat.id, True):
+    while tracker_status.get(chat_id, True):
         driver = None
         try:
             options = Options()
@@ -120,7 +107,7 @@ def start_ghost_tracking(message):
             total_slots_found = 0
 
             for date_str in valid_dates:
-                if not tracker_status.get(message.chat.id, True):
+                if not tracker_status.get(chat_id, True):
                     break
 
                 ajax_script = """
@@ -150,14 +137,14 @@ def start_ghost_tracking(message):
                     if slots_qty > 0:
                         total_slots_found += slots_qty
                         live_alert = f"🚨 **LIVE SLOT MILA!** 🚨\n📍 **Office:** {loc_name}\n✅ **Date:** `{date_str}`\n🔥 **Slots:** `{slots_qty}`"
-                        bot.send_message(message.chat.id, live_alert, parse_mode='Markdown')
+                        bot.send_message(chat_id, live_alert, parse_mode='Markdown')
 
             if total_slots_found > 0:
-                bot.send_message(message.chat.id, f"⚡ *Saari dates check ho gayi! Tracker ruk gaya hai.*", reply_markup=get_main_menu(), parse_mode='Markdown')
-                tracker_status[message.chat.id] = False
+                bot.send_message(chat_id, f"⚡ *Saari dates check ho gayi! Tracker ruk gaya hai.*", reply_markup=get_main_menu(), parse_mode='Markdown')
+                tracker_status[chat_id] = False
             else:
                 if first_scan:
-                    bot.send_message(message.chat.id, f"🔄 **Pehla Scan Pura Hua!** (0 Slots).\nMain cloud par lagatar check kar raha hoon! ⚡", parse_mode='Markdown')
+                    bot.send_message(chat_id, f"🔄 **Pehla Scan Pura Hua!** (0 Slots).\nMain cloud par lagatar check kar raha hoon! ⚡", parse_mode='Markdown')
                     first_scan = False
 
             if driver:
@@ -170,10 +157,28 @@ def start_ghost_tracking(message):
                 except: pass
             time.sleep(3) 
 
-# 🔥 BULLETPROOF POLLING (Render Overlap Fix) 🔥
+@bot.message_handler(func=lambda message: message.text.startswith('📍 Track:'))
+def start_ghost_tracking(message):
+    tracker_status[message.chat.id] = False 
+    time.sleep(1) 
+
+    loc_name = message.text.replace('📍 Track: ', '')
+    if loc_name not in LOCATIONS:
+        return
+
+    dist_id = LOCATIONS[loc_name]["dist_id"]
+    off_id = LOCATIONS[loc_name]["off_id"]
+    tracker_status[message.chat.id] = True
+
+    bot.send_message(message.chat.id, f"⚡ **CLOUD MODE ON:** {loc_name}\n\n🕵️‍♂️ 24/7 Tracking shuru...", parse_mode='Markdown', reply_markup=types.ReplyKeyboardMarkup(resize_keyboard=True).add("🛑 Stop Tracker"))
+
+    # 🔥 JADOO: Tracking ko background thread mein start karna 🔥
+    Thread(target=run_tracker, args=(message.chat.id, loc_name, dist_id, off_id), daemon=True).start()
+
+# 🔥 BULLETPROOF POLLING 🔥
 while True:
     try:
         bot.polling(none_stop=True, timeout=60, long_polling_timeout=60)
     except Exception as e:
-        print(f"Connection overlap (Render Deploying)... Retrying in 5 seconds...")
+        print(f"Connection overlap... Retrying in 5 seconds...")
         time.sleep(5)
