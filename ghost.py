@@ -76,7 +76,7 @@ def start_ghost_tracking(message):
             options.add_argument("--headless=new") 
             options.add_argument("--disable-gpu")
             options.add_argument("--no-sandbox")
-            options.add_argument("--disable-dev-shm-usage") # Render ke 512MB RAM ke liye zaroori
+            options.add_argument("--disable-dev-shm-usage") 
             options.add_argument("--log-level=3") 
             options.page_load_strategy = 'eager' 
             prefs = {"profile.managed_default_content_settings.images": 2, "profile.managed_default_content_settings.stylesheets": 2}
@@ -170,4 +170,10 @@ def start_ghost_tracking(message):
                 except: pass
             time.sleep(3) 
 
-bot.polling(none_stop=True)
+# 🔥 BULLETPROOF POLLING (Render Overlap Fix) 🔥
+while True:
+    try:
+        bot.polling(none_stop=True, timeout=60, long_polling_timeout=60)
+    except Exception as e:
+        print(f"Connection overlap (Render Deploying)... Retrying in 5 seconds...")
+        time.sleep(5)
