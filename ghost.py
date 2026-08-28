@@ -22,7 +22,7 @@ def run_server():
 Thread(target=run_server, daemon=True).start()
 
 # --- ORIGINAL GHOST TRACKER CODE ---
-API_TOKEN = '8972721219:AAGypOXUHQD3fXZ-o0A1O9E2LnchD2gmlWg'
+API_TOKEN = '8704791692:AAGJ1orzC-OZYwfo9yTidjVXDrcyiuLwg_U'
 bot = telebot.TeleBot(API_TOKEN)
 tracker_status = {}
 
